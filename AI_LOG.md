@@ -45,3 +45,12 @@ Running notes of what the AI got wrong or right, and what real checks corrected.
 - Each CLI call was a separate process, so the read after import proves data comes from the SQLite file.
 - Real error cases: nonexistent repo gives NOT_FOUND (exit 1), not-a-repo gives INVALID_REPO (exit 1).
 - Not done on purpose: RR_LIVE=1 smoke test (optional in PRD).
+
+## Step 7: adversarial review
+Probed the code with odd inputs (script, not just reading), and checked the rate-limit rules against GitHub's docs.
+- Real finding, secondary rate limits: the docs say a secondary limit is a 403 or 429 with a retry-after header, and x-ratelimit-remaining may still be above 0. My step 5 rule (403 only when remaining is 0) would have called that API_ERROR. This was a wrong assumption of mine, corrected by the docs. Failing test, then fix: 403 with retry-after is RATE_LIMITED.
+- Real finding, malformed items: a list of ints, nulls, an item missing html_url, or a null title crashed with TypeError/KeyError/IntegrityError, breaking the JSON envelope. The rollback did work (0 rows saved), so no data loss, only a broken contract. Failing test, then fix: BAD_RESPONSE before any write. Pull requests are skipped before field checks.
+- Open question for the user: a bad --db path (missing directory) raises sqlite3.OperationalError as a traceback. Fixing it needs a new error code outside the closed taxonomy, so it was not changed without discussion.
+- Minor: read_issues on a path with no file creates an empty database file as a side effect. Not changed.
+- Checked, no issue found: SQL injection (a title of x'); DROP TABLE issues;-- stored and read back verbatim, table intact), unicode and emoji titles, empty list (success with zero counts), transaction rollback on a bad page, repo scoping and case, read never touching the network.
+- Live re-run after the stricter validation still imports facebook/react fine.
