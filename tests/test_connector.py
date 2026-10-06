@@ -11,6 +11,10 @@ def load_page():
     return json.loads(FIXTURE.read_text())
 
 
+def count_real_issues():
+    return sum(1 for i in load_page() if "pull_request" not in i)
+
+
 def fake_fetch_ok(url):
     # Same shape as the real fetch: (status_code, headers, body_text)
     return 200, {}, FIXTURE.read_text()
@@ -26,11 +30,11 @@ def test_import_then_read(tmp_path):
 
     assert result["success"] is True
     assert result["repository"] == "facebook/react"
-    assert result["inserted"] == 8
+    assert result["inserted"] == count_real_issues()
 
     read = read_issues(REPO, db)
     assert read["success"] is True
-    assert read["count"] == 8
+    assert read["count"] == count_real_issues()
     first = read["issues"][0]
     assert set(first) == {"number", "title", "url"}
 
@@ -41,8 +45,8 @@ def test_import_twice_creates_no_duplicates(tmp_path):
     second = import_issues(REPO, db, fetch=fake_fetch_ok)
 
     assert second["inserted"] == 0
-    assert second["unchanged"] == 8
-    assert read_issues(REPO, db)["count"] == 8
+    assert second["unchanged"] == count_real_issues()
+    assert read_issues(REPO, db)["count"] == count_real_issues()
 
 
 def test_api_failure_returns_useful_error(tmp_path):
