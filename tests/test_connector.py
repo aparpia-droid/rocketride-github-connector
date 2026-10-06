@@ -96,3 +96,24 @@ def test_404_maps_to_not_found(tmp_path):
     result = import_issues("nobody/nothing", db, fetch=make_fetch(404, body='{"message": "Not Found"}'))
     assert result["success"] is False
     assert result["error"]["code"] == "NOT_FOUND"
+
+
+def test_rate_limit_maps_to_rate_limited(tmp_path):
+    db = str(tmp_path / "issues.db")
+    exhausted = {"x-ratelimit-remaining": "0"}
+    for fetch in (make_fetch(403, exhausted), make_fetch(429)):
+        result = import_issues(REPO, db, fetch=fetch)
+        assert result["success"] is False
+        assert result["error"]["code"] == "RATE_LIMITED"
+
+
+def test_403_with_requests_left_is_not_rate_limited(tmp_path):
+    db = str(tmp_path / "issues.db")
+    result = import_issues(REPO, db, fetch=make_fetch(403, {"x-ratelimit-remaining": "12"}))
+    assert result["error"]["code"] == "API_ERROR"
+
+
+def test_header_names_are_case_insensitive(tmp_path):
+    db = str(tmp_path / "issues.db")
+    result = import_issues(REPO, db, fetch=make_fetch(403, {"X-RateLimit-Remaining": "0"}))
+    assert result["error"]["code"] == "RATE_LIMITED"
