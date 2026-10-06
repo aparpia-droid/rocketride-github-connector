@@ -117,3 +117,20 @@ def test_header_names_are_case_insensitive(tmp_path):
     db = str(tmp_path / "issues.db")
     result = import_issues(REPO, db, fetch=make_fetch(403, {"X-RateLimit-Remaining": "0"}))
     assert result["error"]["code"] == "RATE_LIMITED"
+
+
+def test_network_failure_maps_to_network_error(tmp_path):
+    import requests
+
+    db = str(tmp_path / "issues.db")
+
+    def timeout(url):
+        raise requests.exceptions.Timeout("timed out")
+
+    def refused(url):
+        raise ConnectionError("connection refused")
+
+    for fetch in (timeout, refused):
+        result = import_issues(REPO, db, fetch=fetch)
+        assert result["success"] is False
+        assert result["error"]["code"] == "NETWORK_ERROR"
