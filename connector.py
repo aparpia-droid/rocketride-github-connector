@@ -21,12 +21,16 @@ def _is_valid_repo(repo):
     return repo.split("/")[1] not in (".", "..")
 
 
+def _invalid_repo_failure(repo):
+    return _failure(
+        repo if isinstance(repo, str) else None,
+        github_client.GitHubError("INVALID_REPO", "Repository must look like owner/name"),
+    )
+
+
 def import_issues(repo, db_path, fetch=github_client.default_fetch):
     if not _is_valid_repo(repo):
-        return _failure(
-            repo if isinstance(repo, str) else None,
-            github_client.GitHubError("INVALID_REPO", "Repository must look like owner/name"),
-        )
+        return _invalid_repo_failure(repo)
     repo = repo.lower()
     try:
         items = github_client.fetch_open_issues(repo, fetch=fetch)
@@ -62,6 +66,8 @@ def import_issues(repo, db_path, fetch=github_client.default_fetch):
 
 
 def read_issues(repo, db_path):
+    if not _is_valid_repo(repo):
+        return _invalid_repo_failure(repo)
     repo = repo.lower()
     conn = database.connect(db_path)
     issues = database.list_issues(conn, repo)
