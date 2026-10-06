@@ -23,7 +23,11 @@ def default_fetch(url):
 def fetch_open_issues(repo, fetch=default_fetch):
     """Fetch ONE page of open issues. Returns the parsed JSON list."""
     url = f"https://api.github.com/repos/{repo}/issues?state=open&per_page=30"
-    status, headers, body = fetch(url)
+    try:
+        status, headers, body = fetch(url)
+    except OSError as e:
+        # requests exceptions, ConnectionError and TimeoutError are all OSError subclasses
+        raise GitHubError("NETWORK_ERROR", f"Could not reach GitHub: {e}")
     headers = {k.lower(): v for k, v in headers.items()}
     if status == 429 or (status == 403 and headers.get("x-ratelimit-remaining") == "0"):
         raise GitHubError("RATE_LIMITED", "GitHub rate limit reached, try again later")
