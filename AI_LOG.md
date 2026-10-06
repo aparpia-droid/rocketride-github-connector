@@ -60,3 +60,7 @@ Probed the code with odd inputs (script, not just reading), and checked the rate
 - The unwritable --db path was first filed under known limits in the README draft. It reads as an unfixed bug there, so it was reframed as a boundary of the error contract in Architecture.MD.
 - README test command changed from bare pytest to python -m pytest, so it uses the active interpreter and does not depend on PATH.
 - The README tools section was wrong in the first draft (listed two tools, missed ChatGPT and the Cursor agents' verification work). Corrected from the author.
+
+## Step 9: clean clone
+- Fresh clone, fresh venv, README commands only: pip install ok, python -m pytest 22 passed, import 8 inserted / 22 PRs skipped, read in a separate process count 8, re-import 0 inserted / 8 unchanged, count still 8, --db and RR_DB_PATH examples work, NOT_FOUND example exits 1. No .db, cache or other junk tracked.
+- Real miss: the README tells the reader to create .venv, but .gitignore did not list it, so git status showed .venv/ as untracked. Fixed by adding .venv/ to .gitignore.
