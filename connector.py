@@ -1,5 +1,10 @@
+import re
+
 import database
 import github_client
+
+# owner: letters, digits, hyphens. name: letters, digits, dot, underscore, hyphen.
+REPO_PATTERN = re.compile(r"[A-Za-z0-9-]+/[A-Za-z0-9._-]+")
 
 
 def _failure(repo, error):
@@ -10,7 +15,18 @@ def _failure(repo, error):
     }
 
 
+def _is_valid_repo(repo):
+    if not isinstance(repo, str) or not REPO_PATTERN.fullmatch(repo):
+        return False
+    return repo.split("/")[1] not in (".", "..")
+
+
 def import_issues(repo, db_path, fetch=github_client.default_fetch):
+    if not _is_valid_repo(repo):
+        return _failure(
+            repo if isinstance(repo, str) else None,
+            github_client.GitHubError("INVALID_REPO", "Repository must look like owner/name"),
+        )
     repo = repo.lower()
     try:
         items = github_client.fetch_open_issues(repo, fetch=fetch)
