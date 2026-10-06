@@ -24,6 +24,8 @@ def fetch_open_issues(repo, fetch=default_fetch):
     """Fetch ONE page of open issues. Returns the parsed JSON list."""
     url = f"https://api.github.com/repos/{repo}/issues?state=open&per_page=30"
     status, headers, body = fetch(url)
+    if status == 404:
+        raise GitHubError("NOT_FOUND", f"Repository {repo} was not found on GitHub")
     if status != 200:
         raise GitHubError("API_ERROR", f"GitHub returned HTTP {status}")
     return json.loads(body)
