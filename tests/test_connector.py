@@ -208,3 +208,19 @@ def test_403_with_retry_after_is_rate_limited(tmp_path):
     headers = {"retry-after": "60", "x-ratelimit-remaining": "40"}
     result = import_issues(REPO, db, fetch=make_fetch(403, headers))
     assert result["error"]["code"] == "RATE_LIMITED"
+
+
+def test_malformed_issue_items_map_to_bad_response_and_write_nothing(tmp_path):
+    db = str(tmp_path / "issues.db")
+    good = {"number": 1, "title": "ok", "html_url": "https://github.com/a/b/issues/1"}
+    bad_pages = [
+        [1, 2],                                        # items are not objects
+        [None],
+        [good, {"number": 9}],                         # missing title and html_url
+        [{"number": 3, "title": None, "html_url": "u"}],  # null title
+    ]
+    for page in bad_pages:
+        result = import_issues("a/b", db, fetch=make_fetch(200, body=json.dumps(page)))
+        assert result["success"] is False, page
+        assert result["error"]["code"] == "BAD_RESPONSE", page
+    assert read_issues("a/b", db)["count"] == 0  # nothing partially saved
