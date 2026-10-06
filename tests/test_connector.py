@@ -143,3 +143,59 @@ def test_malformed_response_maps_to_bad_response(tmp_path):
         result = import_issues(REPO, db, fetch=make_fetch(200, body=body))
         assert result["success"] is False, body
         assert result["error"]["code"] == "BAD_RESPONSE", body
+
+
+def one_issue_page(number, title):
+    page = [{"number": number, "title": title, "html_url": f"https://github.com/x/y/issues/{number}"}]
+    return make_fetch(200, body=json.dumps(page))
+
+
+def test_title_change_on_reimport_is_updated(tmp_path):
+    db = str(tmp_path / "issues.db")
+    import_issues("a/b", db, fetch=one_issue_page(1, "old title"))
+    result = import_issues("a/b", db, fetch=one_issue_page(1, "new title"))
+    assert result["updated"] == 1 and result["inserted"] == 0
+    assert read_issues("a/b", db)["issues"][0]["title"] == "new title"
+
+
+def test_same_issue_number_in_two_repos_does_not_collide(tmp_path):
+    db = str(tmp_path / "issues.db")
+    import_issues("a/one", db, fetch=one_issue_page(1, "from one"))
+    import_issues("a/two", db, fetch=one_issue_page(1, "from two"))
+    assert read_issues("a/one", db)["issues"][0]["title"] == "from one"
+    assert read_issues("a/two", db)["issues"][0]["title"] == "from two"
+
+
+def test_repo_names_are_case_insensitive(tmp_path):
+    db = str(tmp_path / "issues.db")
+    import_issues("Facebook/React", db, fetch=fake_fetch_ok)
+    again = import_issues("facebook/react", db, fetch=fake_fetch_ok)
+    assert again["inserted"] == 0
+    assert read_issues("FACEBOOK/REACT", db)["count"] == count_real_issues()
+
+
+def test_read_never_calls_fetch(tmp_path, monkeypatch):
+    import github_client
+
+    db = str(tmp_path / "issues.db")
+    import_issues(REPO, db, fetch=fake_fetch_ok)
+    monkeypatch.setattr(github_client, "default_fetch", fetch_must_not_be_called)
+    monkeypatch.setattr(github_client, "fetch_open_issues", fetch_must_not_be_called)
+    assert read_issues(REPO, db)["count"] == count_real_issues()
+
+
+def test_data_persists_in_the_database_file(tmp_path):
+    import sqlite3
+
+    db = str(tmp_path / "issues.db")
+    import_issues(REPO, db, fetch=fake_fetch_ok)
+    conn = sqlite3.connect(db)  # a brand new connection, like a restarted program
+    (rows,) = conn.execute("SELECT COUNT(*) FROM issues").fetchone()
+    conn.close()
+    assert rows == count_real_issues()
+
+
+def test_read_with_invalid_repo_returns_error(tmp_path):
+    result = read_issues("not a repo", str(tmp_path / "issues.db"))
+    assert result["success"] is False
+    assert result["error"]["code"] == "INVALID_REPO"
