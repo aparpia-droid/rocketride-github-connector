@@ -105,7 +105,7 @@ $ python cli.py import facebook/this-repo-does-not-exist-xyz
 }
 ```
 
-The issue counts depend on what is open when you run it.
+These outputs are a point-in-time snapshot of `facebook/react`. The counts and titles will differ when you run the connector later, because they depend on what is open at that moment.
 
 Error codes: `INVALID_REPO`, `NOT_FOUND`, `RATE_LIMITED`, `NETWORK_ERROR`, `API_ERROR`, `BAD_RESPONSE`. See [Architecture.MD](Architecture.MD) for when each one is returned. An unwritable `--db` path is deliberately not one of them: I chose to keep the contract at six codes, so it surfaces as the underlying OS error (explained in the Architecture error-handling section).
 
