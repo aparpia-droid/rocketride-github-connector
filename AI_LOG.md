@@ -36,3 +36,12 @@ Running notes of what the AI got wrong or right, and what real checks corrected.
 - Real miss found by a test: read_issues did not validate the repo (I only validated in import_issues). A junk name or None would have been lowercased or crashed. Fixed by sharing the check.
 - Design note: all of requests' exceptions, ConnectionError and TimeoutError are OSError subclasses, so one except OSError covers NETWORK_ERROR.
 - Header names are lowercased before checking x-ratelimit-remaining, because HTTP/2 sends them lowercase and a test can pass any case.
+
+## Step 6: CLI and live run
+- CLI tests (JSON output, exit codes, --db > RR_DB_PATH > ./issues.db) written first, failed with AttributeError (no cli.main), then cli.py made them pass. 20 tests total.
+- Live run against api.github.com for facebook/react: inserted 8, skipped_pull_requests 22. Same numbers as the fixture, which is expected because it was captured minutes earlier, not a coincidence to rely on.
+- The 301 redirect from step 2 was handled by requests with no extra code, as predicted. Checked live, not assumed.
+- Second import (typed as Facebook/React): inserted 0, unchanged 8; sqlite row count stayed 8, so case normalization and idempotency both hold against the real API.
+- Each CLI call was a separate process, so the read after import proves data comes from the SQLite file.
+- Real error cases: nonexistent repo gives NOT_FOUND (exit 1), not-a-repo gives INVALID_REPO (exit 1).
+- Not done on purpose: RR_LIVE=1 smoke test (optional in PRD).
