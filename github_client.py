@@ -35,4 +35,10 @@ def fetch_open_issues(repo, fetch=default_fetch):
         raise GitHubError("NOT_FOUND", f"Repository {repo} was not found on GitHub")
     if status != 200:
         raise GitHubError("API_ERROR", f"GitHub returned HTTP {status}")
-    return json.loads(body)
+    try:
+        issues = json.loads(body)
+    except ValueError:
+        raise GitHubError("BAD_RESPONSE", "GitHub returned a response that is not valid JSON")
+    if not isinstance(issues, list):
+        raise GitHubError("BAD_RESPONSE", "GitHub returned JSON that is not a list of issues")
+    return issues
