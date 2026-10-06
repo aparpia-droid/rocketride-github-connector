@@ -85,3 +85,14 @@ def test_invalid_repo_rejected_before_any_request(tmp_path):
         assert result["success"] is False, bad
         assert result["error"]["code"] == "INVALID_REPO", bad
         assert result["error"]["message"]
+
+
+def make_fetch(status, headers=None, body="{}"):
+    return lambda url: (status, headers or {}, body)
+
+
+def test_404_maps_to_not_found(tmp_path):
+    db = str(tmp_path / "issues.db")
+    result = import_issues("nobody/nothing", db, fetch=make_fetch(404, body='{"message": "Not Found"}'))
+    assert result["success"] is False
+    assert result["error"]["code"] == "NOT_FOUND"
