@@ -23,3 +23,8 @@ Running notes of what the AI got wrong or right, and what real checks corrected.
 - Wrote 4 tests (import then read, import twice, API failure, PR exclusion) against the real fixture. They fail at collection: ImportError, cannot import name import_issues from connector. That is the expected reason, since connector.py is a stub.
 - Decision: the injected fetch is fetch(url) -> (status_code, headers, body_text) and raises on network failure. Tests fix this contract before any implementation exists.
 - Pasted Cursor output described the repo as empty with a Cursor temp remote. That was stale; this repo already had the scaffold and fixture on GitHub. Declined its extra handoff files for now, since they are outside the PRD layout.
+
+## Step 4: naive implementation
+- Changed the tests (at the user's request) to compute the expected count from the fixture instead of hardcoding 8. Reason: a recaptured fixture would break a hardcoded number.
+- First naive version passes all 4 tests. Known gaps left on purpose, to be driven by failing tests in step 5: no repo validation, only HTTP status != 200 maps to API_ERROR (404 and rate limit are not distinguished yet), a network exception or bad JSON would crash instead of returning an error envelope.
+- No real corrections yet; nothing in the naive version has been tested against the live API.
