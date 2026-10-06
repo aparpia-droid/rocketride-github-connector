@@ -134,3 +134,12 @@ def test_network_failure_maps_to_network_error(tmp_path):
         result = import_issues(REPO, db, fetch=fetch)
         assert result["success"] is False
         assert result["error"]["code"] == "NETWORK_ERROR"
+
+
+def test_malformed_response_maps_to_bad_response(tmp_path):
+    db = str(tmp_path / "issues.db")
+    bodies = ["this is not json", "", '{"message": "an object, not a list"}', "null"]
+    for body in bodies:
+        result = import_issues(REPO, db, fetch=make_fetch(200, body=body))
+        assert result["success"] is False, body
+        assert result["error"]["code"] == "BAD_RESPONSE", body
