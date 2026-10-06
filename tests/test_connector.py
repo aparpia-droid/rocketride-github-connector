@@ -70,3 +70,18 @@ def test_pull_requests_are_excluded(tmp_path):
 
     saved = {i["number"] for i in read_issues(REPO, db)["issues"]}
     assert saved.isdisjoint(pr_numbers)
+
+
+def fetch_must_not_be_called(url):
+    raise AssertionError("fetch should not be called")
+
+
+def test_invalid_repo_rejected_before_any_request(tmp_path):
+    db = str(tmp_path / "issues.db")
+    bad_names = ["react", "a/b/c", "", "/react", "facebook/", "face book/react",
+                 "facebook/react;DROP TABLE issues", "../etc/passwd", "a/..", None]
+    for bad in bad_names:
+        result = import_issues(bad, db, fetch=fetch_must_not_be_called)
+        assert result["success"] is False, bad
+        assert result["error"]["code"] == "INVALID_REPO", bad
+        assert result["error"]["message"]
