@@ -199,3 +199,12 @@ def test_read_with_invalid_repo_returns_error(tmp_path):
     result = read_issues("not a repo", str(tmp_path / "issues.db"))
     assert result["success"] is False
     assert result["error"]["code"] == "INVALID_REPO"
+
+
+def test_403_with_retry_after_is_rate_limited(tmp_path):
+    # GitHub docs: a secondary rate limit is a 403 or 429 with a retry-after header,
+    # and x-ratelimit-remaining may still be above 0.
+    db = str(tmp_path / "issues.db")
+    headers = {"retry-after": "60", "x-ratelimit-remaining": "40"}
+    result = import_issues(REPO, db, fetch=make_fetch(403, headers))
+    assert result["error"]["code"] == "RATE_LIMITED"
