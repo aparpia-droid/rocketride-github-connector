@@ -28,3 +28,11 @@ Running notes of what the AI got wrong or right, and what real checks corrected.
 - Changed the tests (at the user's request) to compute the expected count from the fixture instead of hardcoding 8. Reason: a recaptured fixture would break a hardcoded number.
 - First naive version passes all 4 tests. Known gaps left on purpose, to be driven by failing tests in step 5: no repo validation, only HTTP status != 200 maps to API_ERROR (404 and rate limit are not distinguished yet), a network exception or bad JSON would crash instead of returning an error envelope.
 - No real corrections yet; nothing in the naive version has been tested against the live API.
+
+## Step 5: error mapping and extra tests
+- Each of INVALID_REPO, NOT_FOUND, RATE_LIMITED, NETWORK_ERROR, BAD_RESPONSE was added as a failing test commit followed by a fix commit.
+- Test that passed before any fix: 403 with requests left stays API_ERROR (naive code already did that). It is a guard, not a failing-first test. The same is true of title update, repo collision, case-insensitivity, read-without-network and persistence: they passed on the naive code, so I checked them by mutation instead.
+- Mutation checks (temporary edits, then restored): upsert DO NOTHING failed the title-update test; removing lowercasing failed the case test; removing repository from the primary key failed 8 tests, but with a sqlite OperationalError (ON CONFLICT target no longer matches), not a clean assertion. So the collision test is not what catches that one by itself.
+- Real miss found by a test: read_issues did not validate the repo (I only validated in import_issues). A junk name or None would have been lowercased or crashed. Fixed by sharing the check.
+- Design note: all of requests' exceptions, ConnectionError and TimeoutError are OSError subclasses, so one except OSError covers NETWORK_ERROR.
+- Header names are lowercased before checking x-ratelimit-remaining, because HTTP/2 sends them lowercase and a test can pass any case.
