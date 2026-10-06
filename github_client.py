@@ -43,4 +43,16 @@ def fetch_open_issues(repo, fetch=default_fetch):
         raise GitHubError("BAD_RESPONSE", "GitHub returned a response that is not valid JSON")
     if not isinstance(issues, list):
         raise GitHubError("BAD_RESPONSE", "GitHub returned JSON that is not a list of issues")
+    for item in issues:
+        # Pull requests are skipped later, so only real issues need the three fields.
+        if not isinstance(item, dict):
+            raise GitHubError("BAD_RESPONSE", "GitHub returned a list item that is not an object")
+        if "pull_request" in item:
+            continue
+        if not (
+            isinstance(item.get("number"), int)
+            and isinstance(item.get("title"), str)
+            and isinstance(item.get("html_url"), str)
+        ):
+            raise GitHubError("BAD_RESPONSE", "GitHub returned an issue missing number, title or html_url")
     return issues
