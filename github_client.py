@@ -29,7 +29,9 @@ def fetch_open_issues(repo, fetch=default_fetch):
         # requests exceptions, ConnectionError and TimeoutError are all OSError subclasses
         raise GitHubError("NETWORK_ERROR", f"Could not reach GitHub: {e}")
     headers = {k.lower(): v for k, v in headers.items()}
-    if status == 429 or (status == 403 and headers.get("x-ratelimit-remaining") == "0"):
+    out_of_requests = headers.get("x-ratelimit-remaining") == "0"
+    told_to_wait = "retry-after" in headers  # GitHub's secondary rate limit signal
+    if status == 429 or (status == 403 and (out_of_requests or told_to_wait)):
         raise GitHubError("RATE_LIMITED", "GitHub rate limit reached, try again later")
     if status == 404:
         raise GitHubError("NOT_FOUND", f"Repository {repo} was not found on GitHub")
