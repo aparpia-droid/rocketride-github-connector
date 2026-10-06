@@ -24,6 +24,9 @@ def fetch_open_issues(repo, fetch=default_fetch):
     """Fetch ONE page of open issues. Returns the parsed JSON list."""
     url = f"https://api.github.com/repos/{repo}/issues?state=open&per_page=30"
     status, headers, body = fetch(url)
+    headers = {k.lower(): v for k, v in headers.items()}
+    if status == 429 or (status == 403 and headers.get("x-ratelimit-remaining") == "0"):
+        raise GitHubError("RATE_LIMITED", "GitHub rate limit reached, try again later")
     if status == 404:
         raise GitHubError("NOT_FOUND", f"Repository {repo} was not found on GitHub")
     if status != 200:
