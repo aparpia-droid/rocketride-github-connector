@@ -18,3 +18,8 @@ Running notes of what the AI got wrong or right, and what real checks corrected.
 - Real API behavior: the repo moved, so GitHub redirects /repos/facebook/react to /repositories/10270250. curl needs -L. requests follows redirects on GET by default, so the connector should work, but this must be tested live in step 6.
 - Real API behavior: issue html_url values say github.com/react/react/issues/N even though we asked for facebook/react. We store the URL GitHub gives, and key rows by the repo name the user typed (lowercased). Worth mentioning in Architecture.MD.
 - Fixture: facebook/react, 30 items, 22 pull requests, 8 issues, all with number/title/html_url. 160 KB of public data, no secrets, no edits made.
+
+## Step 3: failing tests first
+- Wrote 4 tests (import then read, import twice, API failure, PR exclusion) against the real fixture. They fail at collection: ImportError, cannot import name import_issues from connector. That is the expected reason, since connector.py is a stub.
+- Decision: the injected fetch is fetch(url) -> (status_code, headers, body_text) and raises on network failure. Tests fix this contract before any implementation exists.
+- Pasted Cursor output described the repo as empty with a Cursor temp remote. That was stale; this repo already had the scaffold and fixture on GitHub. Declined its extra handoff files for now, since they are outside the PRD layout.
