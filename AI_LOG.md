@@ -54,3 +54,9 @@ Probed the code with odd inputs (script, not just reading), and checked the rate
 - Minor: read_issues on a path with no file creates an empty database file as a side effect. Not changed.
 - Checked, no issue found: SQL injection (a title of x'); DROP TABLE issues;-- stored and read back verbatim, table intact), unicode and emoji titles, empty list (success with zero counts), transaction rollback on a bad page, repo scoping and case, read never touching the network.
 - Live re-run after the stricter validation still imports facebook/react fine.
+
+## Docs step
+- Correction to my step 2 note: I wrote that the repo "moved". What I actually observed is a 301 to a numeric ID endpoint (/repositories/10270250/issues) and issue URLs showing react/react. "Moved" was my inference, so the docs describe only the observed behavior.
+- The unwritable --db path was first filed under known limits in the README draft. It reads as an unfixed bug there, so it was reframed as a boundary of the error contract in Architecture.MD.
+- README test command changed from bare pytest to python -m pytest, so it uses the active interpreter and does not depend on PATH.
+- The README tools section was wrong in the first draft (listed two tools, missed ChatGPT and the Cursor agents' verification work). Corrected from the author.
